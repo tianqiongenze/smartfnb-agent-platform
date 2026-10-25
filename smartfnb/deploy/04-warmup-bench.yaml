@@ -1,0 +1,60 @@
+# Redis warmup + LLM基准 + 每日预警CronJob
+apiVersion: batch/v1
+kind: Job
+metadata: { name: redis-warmup, namespace: fnb-prod }
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: warmup
+        image: 10.167.2.175:30500/fnb/tools:0.1.7
+        args: ["python", "warmup.py"]
+        env:
+        - { name: DB_HOST, valueFrom: { configMapKeyRef: { name: app-config, key: DB_HOST } } }
+        - { name: REDIS_PW, valueFrom: { configMapKeyRef: { name: app-config, key: REDIS_PW } } }
+        resources:
+          requests: { cpu: "500m", memory: 512Mi }
+          limits: { cpu: "2", memory: 2Gi }
+---
+apiVersion: batch/v1
+kind: Job
+metadata: { name: llm-bench, namespace: fnb-prod }
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: bench
+        image: 10.167.2.175:30500/fnb/tools:0.1.7
+        args: ["python", "bench.py"]
+        env:
+        - { name: OLLAMA_BASE, valueFrom: { configMapKeyRef: { name: app-config, key: OLLAMA_BASE } } }
+        - { name: BENCH_MODELS, value: "qwen3:4b,qwen3:8b" }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: { name: alert-compute, namespace: fnb-prod }
+spec:
+  schedule: "30 7 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: call
+            image: 10.167.2.175:30500/base/python:3.13-slim
+            command: ["python", "-c"]
+            args:
+            - |
+              import urllib.request, datetime
+              d = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+              print(urllib.request.urlopen(urllib.request.Request(
+                  "http://svc-inventory:8080/api/alerts/compute?date=" + d, method="POST"), timeout=300).read().decode())

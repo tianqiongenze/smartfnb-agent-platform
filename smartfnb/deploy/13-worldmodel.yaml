@@ -1,0 +1,27 @@
+# R4: World Model 仿真服务
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: svc-worldmodel, namespace: fnb-prod, labels: { app: svc-worldmodel } }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: svc-worldmodel } }
+  template:
+    metadata: { labels: { app: svc-worldmodel } }
+    spec:
+      containers:
+      - name: wm
+        image: 10.167.2.175:30500/fnb/svc-worldmodel:0.1.0
+        env:
+        - { name: DB_HOST, valueFrom: { configMapKeyRef: { name: app-config, key: DB_HOST } } }
+        ports: [{ containerPort: 8000 }]
+        resources:
+          requests: { cpu: 250m, memory: 512Mi }
+          limits: { cpu: "2", memory: 1Gi }
+        readinessProbe: { httpGet: { path: /health, port: 8000 }, periodSeconds: 15, failureThreshold: 10 }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: svc-worldmodel, namespace: fnb-prod }
+spec:
+  selector: { app: svc-worldmodel }
+  ports: [{ port: 8000 }]

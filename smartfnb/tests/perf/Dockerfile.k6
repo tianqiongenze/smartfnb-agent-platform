@@ -1,0 +1,5 @@
+FROM 10.167.2.175:30500/perf/k6-base:0.54.0
+COPY k6/ /scripts/
+WORKDIR /scripts
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["k6 run /scripts/s1_menu.js"]

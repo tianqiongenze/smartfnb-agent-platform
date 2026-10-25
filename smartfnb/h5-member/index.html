@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>智慧餐链 · 会员助手</title>
+  <script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; font-family: -apple-system, sans-serif; }
+    body { background: #f5f6fa; padding-bottom: 90px; }
+    .hd { background: linear-gradient(90deg,#1f2d3d,#409EFF); color: #fff; padding: 16px; }
+    .hd b { font-size: 17px; } .hd div { font-size: 12px; opacity: .85; margin-top: 4px; }
+    .tabs { display: flex; background: #fff; }
+    .tabs div { flex: 1; text-align: center; padding: 12px; font-size: 14px; color: #666; border-bottom: 2px solid transparent; }
+    .tabs div.on { color: #409EFF; border-color: #409EFF; }
+    .card { background: #fff; margin: 12px; border-radius: 10px; padding: 14px; }
+    .msg { display: inline-block; max-width: 82%; padding: 8px 12px; border-radius: 8px; margin: 4px 0; font-size: 14px; white-space: pre-wrap; }
+    .me { background: #409EFF22; margin-left: auto; display: block; text-align: right; }
+    .bot { background: #eef4ff; }
+    .in { display: flex; gap: 8px; padding: 10px 12px; }
+    .in input { flex: 1; padding: 10px; border: 1px solid #dcdfe6; border-radius: 8px; }
+    .in button { padding: 0 16px; background: #409EFF; color: #fff; border: none; border-radius: 8px; }
+    .chatbox { height: 46vh; overflow-y: auto; }
+    .pts { font-size: 26px; color: #E6A23C; font-weight: 700; }
+    .coupon { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="hd"><b>🍽️ 智慧餐链会员</b><div>注册用户 1,000,000 · 你是其中之一 (Phase-3 演示)</div></div>
+  <div class="tabs">
+    <div :class="{on: tab==='chat'}" @click="tab='chat'">🤖 点餐助手</div>
+    <div :class="{on: tab==='mine'}" @click="tab='mine'">🎁 我的会员</div>
+  </div>
+  <template v-if="tab==='chat'">
+    <div class="card chatbox" ref="box">
+      <div v-for="(m, i) in msgs" :key="i" :class="m.role">
+        <span :class="'msg ' + m.role">{{ m.text }}</span>
+      </div>
+    </div>
+    <div class="in">
+      <input v-model="q" placeholder="试试: 推荐几个招牌菜" @keyup.enter="send">
+      <button @click="send" :disabled="busy">{{ busy ? '…' : '发送' }}</button>
+    </div>
+  </template>
+  <template v-else>
+    <div class="card">
+      <div style="font-size:14px;color:#666">当前积分</div>
+      <div class="pts">{{ points }}</div>
+      <button style="margin-top:8px;padding:8px 14px;background:#E6A23C;color:#fff;border:none;border-radius:6px"
+              @click="earn">模拟消费100元得100分</button>
+    </div>
+    <div class="card">
+      <div style="font-size:14px;color:#666;margin-bottom:6px">我的券</div>
+      <div class="coupon" v-for="c in coupons" :key="c.id">
+        <span>{{ c.title }}</span><span>¥{{ c.amount }} · {{ c.status }}</span>
+      </div>
+      <div v-if="!coupons.length" style="color:#999;font-size:13px">暂无券, 点击下方领取</div>
+      <button style="margin-top:8px;padding:8px 14px;background:#67c23a;color:#fff;border:none;border-radius:6px"
+              @click="issue">领20元新人券</button>
+    </div>
+  </template>
+</div>
+<script>
+const { createApp, ref, nextTick } = Vue;
+createApp({
+  setup() {
+    const tab = ref('chat'), q = ref(''), busy = ref(false);
+    const msgs = ref([{ role: 'bot', text: '您好! 我是点餐助手~ 试试: 推荐几个招牌菜 / 7号店2026-10-23的差异' }]);
+    const memberId = ref(100003);
+    const points = ref(0), coupons = ref([]), box = ref(null);
+    const scroll = () => nextTick(() => box.value && (box.value.scrollTop = box.value.scrollHeight));
+    const send = async () => {
+      const text = q.value.trim(); if (!text || busy.value) return;
+      q.value = ''; busy.value = true;
+      msgs.value.push({ role: 'me', text }); scroll();
+      const bot = { role: 'bot', text: '' }; msgs.value.push(bot); scroll();
+      try {
+        const resp = await fetch('/api/agent/chat', { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: text, storeId: 7, date: new Date(Date.now() - 86400000).toISOString().slice(0, 10) }) });
+        const reader = resp.body.getReader(); const dec = new TextDecoder(); let buf = '';
+        while (true) {
+          const { done, value } = await reader.read(); if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let i;
+          while ((i = buf.indexOf('\n\n')) >= 0) {
+            const line = buf.slice(0, i).split('\n').find(l => l.startsWith('data: '));
+            buf = buf.slice(i + 2);
+            if (line) {
+              const ev = JSON.parse(line.slice(6));
+              if (ev.event === 'answer') { bot.text = ev.answer; scroll(); }
+              if (ev.event === 'error') { bot.text = ev.message; scroll(); }
+            }
+          }
+        }
+      } catch (e) { bot.text = '网络错误'; }
+      busy.value = false; scroll();
+    };
+    const loadMine = async () => {
+      const p = await (await fetch(`/api/members/${memberId.value}`)).json();
+      points.value = p.points;
+      coupons.value = await (await fetch(`/api/members/${memberId.value}/coupons`)).json();
+    };
+    const earn = async () => {
+      const r = await (await fetch(`/api/members/${memberId.value}/points?delta=100`, { method: 'POST' })).json();
+      points.value = r.total;
+    };
+    const issue = async () => {
+      await fetch(`/api/members/${memberId.value}/coupons?title=新人礼券&amount=20`, { method: 'POST' });
+      loadMine();
+    };
+    return { tab, q, busy, msgs, box, points, coupons, send, earn, issue };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

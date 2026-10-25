@@ -1,0 +1,12 @@
+server:
+  port: 8080
+spring:
+  application.name: svc-member
+  threads.virtual.enabled: true
+app:
+  db:
+    write: jdbc:mysql://${DB_HOST:tidb.infra.svc.cluster.local}:${DB_PORT:4000}/fnb?useSSL=false&allowPublicKeyRetrieval=true
+    read:  jdbc:mysql://${DB_READ_HOST:tidb.infra.svc.cluster.local}:${DB_PORT:4000}/fnb?useSSL=false&allowPublicKeyRetrieval=true
+    user: ${DB_USER:root}
+    pass: ${DB_PASS:}
+management.endpoints.web.exposure.include: health,info,metrics,prometheus

@@ -1,0 +1,26 @@
+# 数据生成(1.25亿行, 8分片按日期并行)
+apiVersion: batch/v1
+kind: Job
+metadata: { name: data-gen, namespace: fnb-prod }
+spec:
+  completions: 8
+  parallelism: 8
+  completionMode: Indexed
+  backoffLimit: 4
+  activeDeadlineSeconds: 14400
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels: { app: data-gen }
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: gen
+        image: 10.167.2.175:30500/fnb/tools:0.1.7
+        args: ["python", "gen.py"]
+        env:
+        - { name: DB_HOST, valueFrom: { configMapKeyRef: { name: app-config, key: DB_HOST } } }
+        - { name: SHARDS, value: "8" }
+        resources:
+          requests: { cpu: "1", memory: 1Gi }
+          limits: { cpu: "4", memory: 4Gi }

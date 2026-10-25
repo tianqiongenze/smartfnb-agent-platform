@@ -1,0 +1,93 @@
+# SmartF&B Phase-0 部署清单(fnb-prod)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fnb-prod
+  labels: { app.kubernetes.io/part-of: smartfnb }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: app-config, namespace: fnb-prod }
+data:
+  DB_HOST: "tidb.infra.svc.cluster.local"
+  DB_PORT: "4000"
+  DB_USER: "root"
+  OLLAMA_BASE: "http://ollama-worker-svc.ai-platform.svc.cluster.local:11434"
+  MCP_URL: "http://mcp-fnb-tools:8000/mcp"
+  REDIS_PW: "difyai123456"
+---
+apiVersion: v1
+kind: Secret
+metadata: { name: fnb-secret, namespace: fnb-prod }
+type: Opaque
+stringData:
+  jwt-secret: "fnb-jwt-2026-smartfnb-Phase0"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: fnb-sql, namespace: fnb-prod }
+data:
+  001_schema.sql: |
+    CREATE DATABASE IF NOT EXISTS fnb DEFAULT CHARSET utf8mb4;
+    USE fnb;
+    CREATE TABLE IF NOT EXISTS store (store_id INT NOT NULL PRIMARY KEY, name VARCHAR(64) NOT NULL, city VARCHAR(32) NOT NULL, area_m2 INT, opened_at DATE);
+    CREATE TABLE IF NOT EXISTS unit_dict (unit_code VARCHAR(8) NOT NULL PRIMARY KEY, unit_name VARCHAR(16) NOT NULL, ratio_to_gram DECIMAL(12,4) NOT NULL);
+    CREATE TABLE IF NOT EXISTS ingredient (ing_id INT NOT NULL PRIMARY KEY, ing_code VARCHAR(16) NOT NULL UNIQUE, name_std VARCHAR(64) NOT NULL, category VARCHAR(16) NOT NULL, base_unit VARCHAR(8) NOT NULL DEFAULT 'g', box_ratio DECIMAL(12,4) DEFAULT NULL, aliases JSON, ref_price DECIMAL(10,2));
+    CREATE TABLE IF NOT EXISTS supplier (sup_id INT NOT NULL PRIMARY KEY, name VARCHAR(64) NOT NULL, category VARCHAR(16), rating DECIMAL(3,1));
+    CREATE TABLE IF NOT EXISTS dish (dish_id INT NOT NULL PRIMARY KEY, name VARCHAR(64) NOT NULL, category VARCHAR(16), price DECIMAL(8,2));
+    CREATE TABLE IF NOT EXISTS bom (id BIGINT NOT NULL PRIMARY KEY AUTO_RANDOM(4), dish_id INT NOT NULL, ing_id INT NOT NULL, grams_per_serving DECIMAL(10,2) NOT NULL, KEY idx_bom_dish (dish_id));
+    CREATE TABLE IF NOT EXISTS store_menu (store_id INT NOT NULL, dish_id INT NOT NULL, PRIMARY KEY (store_id, dish_id));
+    CREATE TABLE IF NOT EXISTS member (member_id BIGINT NOT NULL PRIMARY KEY, name_mask VARCHAR(16), phone_hash CHAR(64), level TINYINT, registered_at DATE);
+    CREATE TABLE IF NOT EXISTS hot_member (hot_id INT NOT NULL PRIMARY KEY, member_id BIGINT NOT NULL, order_cnt INT);
+    CREATE TABLE IF NOT EXISTS sales_order (order_id BIGINT NOT NULL PRIMARY KEY, store_id INT NOT NULL, member_id BIGINT, order_date DATE NOT NULL, order_time DATETIME NOT NULL, channel TINYINT, amount DECIMAL(12,2));
+    CREATE TABLE IF NOT EXISTS sales_line (line_id BIGINT NOT NULL PRIMARY KEY, order_id BIGINT NOT NULL, store_id INT NOT NULL, order_date DATE NOT NULL, dish_id INT NOT NULL, qty INT NOT NULL, line_amount DECIMAL(12,2));
+    CREATE TABLE IF NOT EXISTS stock_movement (mov_id BIGINT NOT NULL PRIMARY KEY, store_id INT NOT NULL, ing_id INT NOT NULL, movement_date DATE NOT NULL, movement_type ENUM('receive','consume','waste','transfer_out') NOT NULL, qty_base_gram BIGINT NOT NULL, ref_no VARCHAR(32), created_at DATETIME);
+    CREATE TABLE IF NOT EXISTS waste_record (waste_id BIGINT NOT NULL PRIMARY KEY, store_id INT NOT NULL, ing_id INT NOT NULL, waste_date DATE NOT NULL, qty_base_gram BIGINT NOT NULL, reason TINYINT, note VARCHAR(128));
+    CREATE TABLE IF NOT EXISTS purchase_order (po_id BIGINT NOT NULL PRIMARY KEY, store_id INT NOT NULL, sup_id INT NOT NULL, order_date DATE NOT NULL, status TINYINT, total_amount DECIMAL(14,2));
+    CREATE TABLE IF NOT EXISTS purchase_item (pi_id BIGINT NOT NULL PRIMARY KEY, po_id BIGINT NOT NULL, ing_id INT NOT NULL, qty DECIMAL(12,2), unit_code VARCHAR(8), unit_price DECIMAL(10,2));
+    CREATE TABLE IF NOT EXISTS alert (id BIGINT NOT NULL PRIMARY KEY AUTO_RANDOM(5), diff_date DATE NOT NULL, store_id INT NOT NULL, ing_id INT NOT NULL, theo_gram BIGINT, actual_gram BIGINT, diff_pct DECIMAL(6,1), level ENUM('HIGH','MEDIUM') NOT NULL, status ENUM('OPEN','ACK') NOT NULL DEFAULT 'OPEN', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, acked_at DATETIME NULL, UNIQUE KEY uk_alert (diff_date, store_id, ing_id));
+    CREATE TABLE IF NOT EXISTS po_suggestion (id BIGINT NOT NULL PRIMARY KEY, store_id INT NOT NULL, ing_id INT NOT NULL, sug_date DATE NOT NULL, suggest_qty DECIMAL(12,2) NOT NULL, unit_code VARCHAR(8) NOT NULL, sup_id INT, est_price DECIMAL(10,2), reason VARCHAR(300), status ENUM('DRAFT','APPROVED','REJECTED') NOT NULL DEFAULT 'DRAFT', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, decided_at DATETIME NULL, decided_by VARCHAR(32) NULL, KEY idx_sug_status (status, store_id));
+  005_daily_demand.sql: |
+    USE fnb;
+    CREATE TABLE IF NOT EXISTS daily_demand (store_id INT NOT NULL, ing_id INT NOT NULL, stat_date DATE NOT NULL, demand_gram BIGINT NOT NULL, PRIMARY KEY (store_id, ing_id, stat_date));
+    INSERT INTO daily_demand (store_id, ing_id, stat_date, demand_gram) SELECT sl.store_id, b.ing_id, sl.order_date, CAST(ROUND(SUM(sl.qty * b.grams_per_serving)) AS SIGNED) FROM sales_line sl JOIN bom b ON sl.dish_id = b.dish_id GROUP BY sl.store_id, b.ing_id, sl.order_date;
+  003_indexes.sql: |
+    USE fnb;
+    ALTER TABLE sales_line ADD INDEX idx_sl_date_store (order_date, store_id, dish_id);
+    ALTER TABLE sales_order ADD INDEX idx_so_date (order_date, store_id);
+    ALTER TABLE stock_movement ADD INDEX idx_sm_date_store (movement_date, store_id, movement_type, ing_id);
+    ALTER TABLE waste_record ADD INDEX idx_wr_date (waste_date, store_id);
+    ALTER TABLE purchase_order ADD INDEX idx_po_date (order_date, store_id);
+    ALTER TABLE purchase_item ADD INDEX idx_pi_po (po_id);
+    ALTER TABLE member ADD INDEX idx_member_level (level);
+  004_views.sql: |
+    USE fnb;
+    CREATE OR REPLACE VIEW v_theoretical AS SELECT sl.order_date AS d, sl.store_id, b.ing_id, ROUND(SUM(sl.qty * b.grams_per_serving)) AS theo_gram FROM sales_line sl JOIN bom b ON sl.dish_id = b.dish_id GROUP BY sl.order_date, sl.store_id, b.ing_id;
+    CREATE OR REPLACE VIEW v_actual AS SELECT movement_date AS d, store_id, ing_id, SUM(qty_base_gram) AS actual_gram FROM stock_movement WHERE movement_type = 'consume' GROUP BY movement_date, store_id, ing_id;
+    CREATE OR REPLACE VIEW v_diff AS SELECT COALESCE(t.d, a.d) AS d, COALESCE(t.store_id, a.store_id) AS store_id, COALESCE(t.ing_id, a.ing_id) AS ing_id, COALESCE(t.theo_gram, 0) AS theo_gram, COALESCE(a.actual_gram, 0) AS actual_gram, ROUND((COALESCE(a.actual_gram,0) - COALESCE(t.theo_gram,0)) / NULLIF(t.theo_gram,0) * 100, 1) AS diff_pct FROM v_theoretical t LEFT JOIN v_actual a ON t.d = a.d AND t.store_id = a.store_id AND t.ing_id = a.ing_id;
+---
+# TiDB 读源Service(读写分离: 多TiDB Server, 写源用 infra/tidb)
+apiVersion: v1
+kind: Service
+metadata: { name: tidb-read, namespace: fnb-prod }
+spec:
+  type: ExternalName
+  externalName: tidb.infra.svc.cluster.local
+---
+apiVersion: batch/v1
+kind: Job
+metadata: { name: db-init, namespace: fnb-prod }
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: init
+        image: 10.167.2.175:30500/fnb/tools:0.1.7
+        args: ["python", "run_sql.py", "/sql/001_schema.sql"]
+        env: [{ name: DB_HOST, valueFrom: { configMapKeyRef: { name: app-config, key: DB_HOST } } }]
+        volumeMounts: [{ name: sql, mountPath: /sql }]
+      volumes:
+      - name: sql
+        configMap: { name: fnb-sql }

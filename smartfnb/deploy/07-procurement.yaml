@@ -1,0 +1,33 @@
+# Phase2: svc-procurement 采购域服务
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: svc-procurement, namespace: fnb-prod, labels: { app: svc-procurement } }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: svc-procurement } }
+  template:
+    metadata:
+      labels: { app: svc-procurement }
+      annotations: { prometheus.io/scrape: "true", prometheus.io/port: "8080", prometheus.io/path: /actuator/prometheus }
+    spec:
+      containers:
+      - name: procurement
+        image: 10.167.2.175:30500/fnb/svc-procurement:0.2.0
+        env:
+        - { name: DB_HOST, valueFrom: { configMapKeyRef: { name: app-config, key: DB_HOST } } }
+        - { name: DB_PORT, valueFrom: { configMapKeyRef: { name: app-config, key: DB_PORT } } }
+        - { name: DB_USER, valueFrom: { configMapKeyRef: { name: app-config, key: DB_USER } } }
+        - { name: MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED, value: "true" }
+        ports: [{ containerPort: 8080 }]
+        resources:
+          requests: { cpu: 250m, memory: 512Mi }
+          limits: { cpu: "1", memory: 1Gi }
+        readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8080 }, initialDelaySeconds: 25, periodSeconds: 10 }
+        livenessProbe: { httpGet: { path: /actuator/health/liveness, port: 8080 }, initialDelaySeconds: 45, periodSeconds: 15 }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: svc-procurement, namespace: fnb-prod }
+spec:
+  selector: { app: svc-procurement }
+  ports: [{ port: 8080 }]

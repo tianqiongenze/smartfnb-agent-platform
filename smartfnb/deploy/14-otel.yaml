@@ -1,0 +1,51 @@
+# R7: OTel Collector(traces: OTLP→stdout[loki可采])
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: otel-collector-conf, namespace: fnb-prod }
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:4318
+    exporters:
+      logging:
+        verbosity: normal
+    processors:
+      batch:
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [logging]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: otel-collector, namespace: fnb-prod, labels: { app: otel-collector } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: otel-collector } }
+  template:
+    metadata: { labels: { app: otel-collector } }
+    spec:
+      containers:
+      - name: collector
+        image: 10.167.2.175:30500/otel/collector:0.116.0
+        args: ["--config=/conf/config.yaml"]
+        ports: [{ containerPort: 4318 }]
+        volumeMounts: [{ name: conf, mountPath: /conf }]
+        resources:
+          requests: { cpu: 100m, memory: 128Mi }
+          limits: { cpu: 500m, memory: 512Mi }
+      volumes:
+      - name: conf
+        configMap: { name: otel-collector-conf }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: otel-collector, namespace: fnb-prod }
+spec:
+  selector: { app: otel-collector }
+  ports: [{ port: 4318 }]

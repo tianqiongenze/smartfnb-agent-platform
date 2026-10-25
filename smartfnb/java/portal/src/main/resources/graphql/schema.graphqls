@@ -1,0 +1,73 @@
+type Store {
+  id: Int!
+  name: String!
+  city: String!
+  areaM2: Int
+}
+
+type Unit {
+  code: String!
+  name: String!
+  ratioToGram: Float!
+}
+
+type Ingredient {
+  id: Int!
+  code: String!
+  name: String!
+  category: String!
+  refPrice: Float
+}
+
+type DiffLine {
+  ingId: Int!
+  ingCode: String
+  ingName: String!
+  category: String
+  theoGram: Float!
+  actualGram: Float!
+  diffPct: Float
+  level: String
+}
+
+type DiffReport {
+  date: String!
+  storeId: Int
+  lines: [DiffLine!]!
+  alertCount: Int!
+}
+
+type Alert {
+  id: String!
+  diffDate: String!
+  storeId: Int!
+  ingId: Int!
+  ingName: String
+  theoGram: Float
+  actualGram: Float
+  diffPct: Float
+  level: String!
+  status: String!
+}
+
+type Query {
+  stores: [Store!]!
+  units: [Unit!]!
+  ingredients: [Ingredient!]!
+  diffReport(storeId: Int, date: String!, limit: Int = 100): DiffReport!
+  alerts(date: String!, storeId: Int): [Alert!]!
+  quality: [QualityRule!]!
+}
+
+type QualityRule {
+  ruleName: String!
+  status: String!
+  metric: Float
+  detail: String
+  checkedAt: String
+}
+
+type Mutation {
+  ackAlert(id: String!): Boolean!
+  ingestMovement(storeId: Int!, ingId: Int!, movementType: String!, qty: Float!, unitCode: String!): String!
+}

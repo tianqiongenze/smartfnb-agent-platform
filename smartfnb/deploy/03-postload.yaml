@@ -1,0 +1,19 @@
+# 数据加载后: 补建索引 + 视图
+apiVersion: batch/v1
+kind: Job
+metadata: { name: db-indexes, namespace: fnb-prod }
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: idx
+        image: 10.167.2.175:30500/fnb/tools:0.1.7
+        args: ["python", "run_sql.py", "/sql/003_indexes.sql", "/sql/004_views.sql"]
+        env: [{ name: DB_HOST, valueFrom: { configMapKeyRef: { name: app-config, key: DB_HOST } } }]
+        volumeMounts: [{ name: sql, mountPath: /sql }]
+      volumes:
+      - name: sql
+        configMap: { name: fnb-sql }

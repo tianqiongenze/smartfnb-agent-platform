@@ -1,0 +1,38 @@
+# fnb 专属 Ollama(共享已有模型目录, 独立推理队列 — 方案§8.4分级路由的专属实例)
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: ollama-fnb, namespace: fnb-prod, labels: { app: ollama-fnb } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: ollama-fnb } }
+  template:
+    metadata: { labels: { app: ollama-fnb } }
+    spec:
+      nodeSelector: { kubernetes.io/hostname: k8s-worker1 }
+      containers:
+      - name: ollama
+        image: 10.100.135.132:5000/ollama:0.6.8
+        env:
+        - { name: OLLAMA_NUM_PARALLEL, value: "1" }
+        - { name: OLLAMA_MAX_LOADED_MODELS, value: "2" }
+        - { name: OLLAMA_KEEP_ALIVE, value: "30m" }
+        ports: [{ containerPort: 11434 }]
+        resources:
+          requests: { cpu: "2", memory: 8Gi }
+          limits: { cpu: "24", memory: 32Gi }
+        volumeMounts:
+        - { name: models, mountPath: /root/.ollama }
+        readinessProbe: { httpGet: { path: /api/tags, port: 11434 }, periodSeconds: 20, failureThreshold: 10 }
+      volumes:
+      - name: models
+        hostPath: { path: /home/k8s-data/ollama, type: Directory }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fnb-ollama
+  namespace: fnb-prod
+spec:
+  type: NodePort
+  selector: { app: ollama-fnb }
+  ports: [{ port: 11434, nodePort: 30253 }]

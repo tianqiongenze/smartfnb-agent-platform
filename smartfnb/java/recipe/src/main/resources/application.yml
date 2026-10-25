@@ -1,0 +1,12 @@
+server:
+  port: 8080
+spring:
+  application.name: svc-recipe
+  threads.virtual.enabled: true   # JDK21 虚拟线程 (ADR-0002)
+  datasource:
+    url: jdbc:mysql://${DB_HOST:tidb.infra.svc.cluster.local}:${DB_PORT:4000}/fnb?useSSL=false&allowPublicKeyRetrieval=true&useServerPrepStmts=true&cachePrepStmts=true
+    username: ${DB_USER:root}
+    password: ${DB_PASS:}
+    hikari:
+      maximum-pool-size: 20
+management.endpoints.web.exposure.include: health,info,metrics,prometheus

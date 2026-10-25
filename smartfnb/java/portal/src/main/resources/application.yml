@@ -1,0 +1,15 @@
+server:
+  port: 8080
+spring:
+  application.name: svc-portal
+  threads.virtual.enabled: true
+  graphql:
+    graphiql:
+      enabled: true        # Phase-0 演示: /graphiql 调试台
+      path: /graphiql
+app:
+  recipe-url: ${RECIPE_URL:http://svc-recipe:8080}
+  inventory-url: ${INVENTORY_URL:http://svc-inventory:8080}
+  agent-url: ${AGENT_URL:http://agent-runtime:8000}
+  jwt-secret: ${JWT_SECRET:smartfnb-dev-secret}
+management.endpoints.web.exposure.include: health,info,metrics,prometheus

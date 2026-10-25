@@ -1,0 +1,100 @@
+{"question": "32号店今天基围虾的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "7号店今天花蟹的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "32号店今天雪花牛肉的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "32号店今天土豆的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "7号店今天五花肉的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "1号店今天土豆的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "32号店今天基围虾的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "1号店今天土豆的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "1号店今天牛腩的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "1号店今天鲈鱼的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "1号店今天鲈鱼的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "18号店今天基围虾的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "32号店今天花蟹的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "32号店今天鲈鱼的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "1号店今天土豆的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "7号店今天基围虾的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "32号店今天生菜的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "18号店今天花蟹的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "7号店今天牛腩的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "32号店今天鲈鱼的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "18号店今天生菜的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "7号店今天雪花牛肉的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "18号店今天五花肉的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "18号店今天生菜的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "32号店今天土豆的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "18号店今天基围虾的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "1号店今天鲈鱼的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "1号店今天雪花牛肉的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "7号店今天基围虾的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "1号店今天生菜的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "18号店今天基围虾的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "7号店今天五花肉的用量差异是多少", "expect_intent": "diff_agent"}
+{"question": "查看浪费情况", "expect_intent": "diff_agent"}
+{"question": "哪些食材多用了", "expect_intent": "diff_agent"}
+{"question": "领料对不对", "expect_intent": "diff_agent"}
+{"question": "昨天损耗大吗", "expect_intent": "diff_agent"}
+{"question": "有没有预警", "expect_intent": "diff_agent"}
+{"question": "帮18号店采购10公斤基围虾", "expect_intent": "procurement_agent", "parse": {"qty": 10.0, "ing": "基围虾"}}
+{"question": "帮7号店采购2.5公斤鲈鱼", "expect_intent": "procurement_agent", "parse": {"qty": 2.5, "ing": "鲈鱼"}}
+{"question": "帮7号店采购100公斤基围虾", "expect_intent": "procurement_agent", "parse": {"qty": 100.0, "ing": "基围虾"}}
+{"question": "帮18号店采购100公斤生菜", "expect_intent": "procurement_agent", "parse": {"qty": 100.0, "ing": "生菜"}}
+{"question": "帮7号店采购2.5公斤鲈鱼", "expect_intent": "procurement_agent", "parse": {"qty": 2.5, "ing": "鲈鱼"}}
+{"question": "帮1号店采购50公斤牛腩", "expect_intent": "procurement_agent", "parse": {"qty": 50.0, "ing": "牛腩"}}
+{"question": "帮7号店采购2.5公斤牛腩", "expect_intent": "procurement_agent", "parse": {"qty": 2.5, "ing": "牛腩"}}
+{"question": "帮7号店采购2.5公斤花蟹", "expect_intent": "procurement_agent", "parse": {"qty": 2.5, "ing": "花蟹"}}
+{"question": "帮7号店采购25公斤土豆", "expect_intent": "procurement_agent", "parse": {"qty": 25.0, "ing": "土豆"}}
+{"question": "帮1号店采购2.5公斤花蟹", "expect_intent": "procurement_agent", "parse": {"qty": 2.5, "ing": "花蟹"}}
+{"question": "帮7号店采购25公斤鲈鱼", "expect_intent": "procurement_agent", "parse": {"qty": 25.0, "ing": "鲈鱼"}}
+{"question": "帮7号店采购2.5公斤牛腩", "expect_intent": "procurement_agent", "parse": {"qty": 2.5, "ing": "牛腩"}}
+{"question": "帮18号店采购100公斤花蟹", "expect_intent": "procurement_agent", "parse": {"qty": 100.0, "ing": "花蟹"}}
+{"question": "帮32号店采购10公斤牛腩", "expect_intent": "procurement_agent", "parse": {"qty": 10.0, "ing": "牛腩"}}
+{"question": "帮7号店采购25公斤牛腩", "expect_intent": "procurement_agent", "parse": {"qty": 25.0, "ing": "牛腩"}}
+{"question": "帮7号店采购10公斤花蟹", "expect_intent": "procurement_agent", "parse": {"qty": 10.0, "ing": "花蟹"}}
+{"question": "看看待审批建议单", "expect_intent": "procurement_agent"}
+{"question": "比价一下鲈鱼", "expect_intent": "procurement_agent"}
+{"question": "供应商有哪些", "expect_intent": "procurement_agent"}
+{"question": "帮我补货", "expect_intent": "procurement_agent"}
+{"question": "预测7号店下周五花肉的需求", "expect_intent": "forecast_agent"}
+{"question": "预测18号店下周生菜的需求", "expect_intent": "forecast_agent"}
+{"question": "预测7号店下周土豆的需求", "expect_intent": "forecast_agent"}
+{"question": "预测7号店下周花蟹的需求", "expect_intent": "forecast_agent"}
+{"question": "预测18号店下周生菜的需求", "expect_intent": "forecast_agent"}
+{"question": "预测18号店下周基围虾的需求", "expect_intent": "forecast_agent"}
+{"question": "预测18号店下周基围虾的需求", "expect_intent": "forecast_agent"}
+{"question": "预测32号店下周花蟹的需求", "expect_intent": "forecast_agent"}
+{"question": "预测18号店下周雪花牛肉的需求", "expect_intent": "forecast_agent"}
+{"question": "预测32号店下周基围虾的需求", "expect_intent": "forecast_agent"}
+{"question": "预测32号店下周鲈鱼的需求", "expect_intent": "forecast_agent"}
+{"question": "预测1号店下周花蟹的需求", "expect_intent": "forecast_agent"}
+{"question": "明天备货多少合适", "expect_intent": "forecast_agent"}
+{"question": "未来7天土豆需求", "expect_intent": "forecast_agent"}
+{"question": "下周要进多少货", "expect_intent": "forecast_agent"}
+{"question": "怎么降低浪费", "expect_intent": "fallback"}
+{"question": "如何减少损耗", "expect_intent": "fallback"}
+{"question": "什么是BOM", "expect_intent": "fallback"}
+{"question": "食材怎么换算成克", "expect_intent": "fallback"}
+{"question": "怎么降低肉类浪费", "expect_intent": "fallback"}
+{"question": "如何减少蔬菜损耗", "expect_intent": "fallback"}
+{"question": "你好", "expect_intent": "smalltalk"}
+{"question": "谢谢", "expect_intent": "smalltalk"}
+{"question": "再见", "expect_intent": "smalltalk"}
+{"question": "推荐几个招牌菜", "expect_intent": "menu_agent"}
+{"question": "看看菜单", "expect_intent": "menu_agent"}
+{"question": "有什么菜品", "expect_intent": "menu_agent"}
+{"question": "等保测评多久一次", "expect_intent": "knowledge_agent"}
+{"question": "公司的退款政策是什么", "expect_intent": "knowledge_agent"}
+{"question": "直答守卫#0", "expect_intent": "knowledge_agent", "tool_lines": [{"name_std": "鲈鱼03", "category": "海鲜", "theo_gram": 9099, "actual_gram": 2972, "diff_pct": -67.3}], "full_shape": true}
+{"question": "直答守卫#1", "expect_intent": "knowledge_agent", "tool_lines": [{"name_std": "鲈鱼03", "category": "海鲜", "theo_gram": 9099, "actual_gram": 2972, "diff_pct": -67.3}], "full_shape": true}
+{"question": "直答守卫#2", "expect_intent": "knowledge_agent", "tool_lines": [{"name_std": "鲈鱼03", "category": "海鲜", "theo_gram": 9099, "actual_gram": 2972, "diff_pct": -67.3}], "full_shape": true}
+{"question": "直答守卫#3", "expect_intent": "knowledge_agent", "tool_lines": [{"name_std": "鲈鱼03", "category": "海鲜", "theo_gram": 9099, "actual_gram": 2972, "diff_pct": -67.3}], "full_shape": true}
+{"question": "直答守卫#4", "expect_intent": "knowledge_agent", "tool_lines": [{"name_std": "鲈鱼03", "category": "海鲜", "theo_gram": 9099, "actual_gram": 2972, "diff_pct": -67.3}], "full_shape": true}
+{"question": "直答守卫#5", "expect_intent": "knowledge_agent", "tool_lines": [{"name_std": "鲈鱼03", "category": "海鲜", "theo_gram": 9099, "actual_gram": 2972, "diff_pct": -67.3}], "full_shape": true}
+{"question": "对抗#0", "expect_intent": "knowledge_agent", "adversarial_answer": "实际需要35.5公斤牛肉", "tool_outputs": ["{\"actual_gram\": 8200}"], "expect_guard_pass": false}
+{"question": "对抗#1", "expect_intent": "knowledge_agent", "adversarial_answer": "明天需求99公斤", "tool_outputs": ["{\"actual_gram\": 8200}"], "expect_guard_pass": false}
+{"question": "对抗#2", "expect_intent": "knowledge_agent", "adversarial_answer": "差异率高达88.8%", "tool_outputs": ["{\"actual_gram\": 8200}"], "expect_guard_pass": false}
+{"question": "对抗#3", "expect_intent": "knowledge_agent", "adversarial_answer": "浪费了1234.5元", "tool_outputs": ["{\"actual_gram\": 8200}"], "expect_guard_pass": false}
+{"question": "对抗#4", "expect_intent": "knowledge_agent", "adversarial_answer": "建议采购77.7公斤", "tool_outputs": ["{\"actual_gram\": 8200}"], "expect_guard_pass": false}
+{"question": "对抗#5", "expect_intent": "knowledge_agent", "adversarial_answer": "环比上涨66.6%", "tool_outputs": ["{\"actual_gram\": 8200}"], "expect_guard_pass": false}
+{"question": "对抗白名单#0", "expect_intent": "knowledge_agent", "adversarial_answer": "实际用量8.2公斤", "tool_outputs": ["{\"actual_gram\": 8200, \"diff_pct\": 47.1}"], "expect_guard_pass": true}
+{"question": "对抗白名单#1", "expect_intent": "knowledge_agent", "adversarial_answer": "差异47.1%", "tool_outputs": ["{\"actual_gram\": 8200, \"diff_pct\": 47.1}"], "expect_guard_pass": true}

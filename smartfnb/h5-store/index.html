@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>智慧餐链 · 门店领料</title>
+  <script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; font-family: -apple-system, sans-serif; }
+    body { background: #f5f6fa; padding-bottom: 80px; }
+    .hd { background: #1f2d3d; color: #fff; padding: 14px 16px; font-size: 17px; font-weight: 700; }
+    .card { background: #fff; margin: 12px; border-radius: 10px; padding: 14px; }
+    .row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+    label { width: 64px; font-size: 14px; color: #555; flex-shrink: 0; }
+    select, input { flex: 1; padding: 10px; border: 1px solid #dcdfe6; border-radius: 8px; font-size: 15px; }
+    .btn { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px; background: #409EFF;
+           color: #fff; font-size: 17px; text-align: center; border: none; width: 100%; }
+    .btn:disabled { background: #a0cfff; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 6px; }
+    .ok { background: #f0f9eb; color: #67c23a; } .err { background: #fef0f0; color: #f56c6c; }
+    .list { font-size: 13px; color: #666; }
+    .list div { padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="hd">🍽️ 门店领料登记</div>
+  <div class="card">
+    <div class="row">
+      <label>门店</label>
+      <select v-model="storeId">
+        <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.id }}-{{ s.name }}</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>食材</label>
+      <select v-model="ingId">
+        <option v-for="i in ingredients" :key="i.id" :value="i.id">{{ i.code }} {{ i.name }}</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>类型</label>
+      <select v-model="type">
+        <option value="receive">收货</option>
+        <option value="consume">领料消耗</option>
+        <option value="waste">废弃</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>数量</label>
+      <input v-model="qty" type="number" step="0.1" placeholder="如 2.5">
+      <select v-model="unit" style="flex:0 0 90px">
+        <option value="kg">千克</option><option value="jin">斤</option><option value="g">克</option>
+      </select>
+    </div>
+    <button class="btn" :disabled="busy" @click="submit">{{ busy ? '提交中...' : '✓ 确认登记' }}</button>
+  </div>
+  <div class="card list" v-if="logs.length">
+    <div v-for="(l, i) in logs" :key="i">
+      {{ l.time }} {{ l.text }}
+      <span :class="l.ok ? 'tag ok' : 'tag err'">{{ l.ok ? '成功' : '失败' }}</span>
+    </div>
+  </div>
+</div>
+<script>
+const { createApp, ref, onMounted } = Vue;
+createApp({
+  setup() {
+    const stores = ref([]), ingredients = ref([]);
+    const storeId = ref(1), ingId = ref(1), type = ref('consume');
+    const qty = ref(''), unit = ref('kg'), busy = ref(false), logs = ref([]);
+    const fmt = () => new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    const load = async () => {
+      const r = await fetch('/graphql', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: '{stores{id,name} ingredients{id code name}}' }) });
+      const d = (await r.json()).data;
+      stores.value = d.stores; ingredients.value = d.ingredients;
+    };
+    const submit = async () => {
+      if (!qty.value || qty.value <= 0) { logs.value.unshift({ time: fmt(), text: '请输入有效数量', ok: false }); return; }
+      busy.value = true;
+      try {
+        const r = await fetch('/api/movements', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storeId: storeId.value, ingId: ingId.value,
+            movementType: type.value, qty: parseFloat(qty.value), unitCode: unit.value }) });
+        const d = await r.json();
+        logs.value.unshift({ time: fmt(), text: `已登记 ${type.value} ${qty.value}${unit.value}(换算${d.qtyBaseGram}克)`, ok: r.ok });
+        qty.value = '';
+      } catch (e) {
+        logs.value.unshift({ time: fmt(), text: '网络错误: ' + e.message, ok: false });
+      } finally { busy.value = false; }
+    };
+    onMounted(load);
+    return { stores, ingredients, storeId, ingId, type, qty, unit, busy, logs, submit };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+# R2: 事件消费者(实时预警)
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: event-consumer, namespace: fnb-prod, labels: { app: event-consumer } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: event-consumer } }
+  template:
+    metadata: { labels: { app: event-consumer } }
+    spec:
+      containers:
+      - name: consumer
+        image: 10.167.2.175:30500/fnb/event-consumer:0.2.1
+        env:
+        - { name: DB_HOST, valueFrom: { configMapKeyRef: { name: app-config, key: DB_HOST } } }
+        ports:
+        - { containerPort: 8081 }
+        resources:
+          requests: { cpu: 100m, memory: 256Mi }
+          limits: { cpu: "1", memory: 512Mi }
+        readinessProbe: { tcpSocket: { port: 8081 }, periodSeconds: 20, failureThreshold: 10 }
+
+---
+apiVersion: v1
+kind: Service
+metadata: { name: event-consumer, namespace: fnb-prod }
+spec:
+  selector: { app: event-consumer }
+  ports: [{ port: 8081 }]
