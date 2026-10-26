@@ -23,7 +23,9 @@ docs/                       全套工程文档(GB/T 8567风格)
   04-多视角审查与重构方案.md   五视角打分(7.10/10)+R1-R10重构定义
   05-功能测试报告.md          43/43用例六域
   06-性能测试报告.md          七梯度矩阵+饱和点+10万并发取证
-  07-ADR集.md                ADR-0009~0015
+  07-ADR集.md                ADR-0009~0016(0016: WebClient h2c升级缺陷)
+  08-功能与性能融合测试报告V3.md  无头浏览器回归+K6五档风暴+Locust(V3)
+  09-局域网人工测试操作指南.md   业务验收人员直接使用
 smartfnb/
   agent-runtime/            Litestar+LangGraph+Harness+语义缓存+A2A+OTel
   java/                     5服务 SpringBoot3.3+Undertow+JDK21虚拟线程(recipe/inventory/procurement/member/portal)
