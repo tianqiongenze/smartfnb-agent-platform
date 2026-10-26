@@ -53,3 +53,11 @@
   hermes单请求工具调用53s冷启动后稳定，且get_diff参数100%正确。
 - **不立即切换原因**：fnb-ollama驻留3模型（8b+4b+embedding）下hermes加载引发反复驱逐（实测单次60-120s）——2节点CPU混部环境不可承载4模型驻留。
 - **revisit条件**：GPU节点到位或LLM流量显著上升时，hermes3:8b为主、qwen3:4b为快路径。
+
+## ADR-0016 portal→agent WebClient 显式 JDK HttpClient HTTP/1.1（V3回归新增，2026-10-26）
+
+- **状态**：已采纳（svc-portal 0.1.3）
+- **背景**：无头浏览器回归发现 /api/agent/chat 全链路 500。排查：pom 排除 reactor-netty 后，Spring WebClient 回落到 JDK HttpClient，其对 `text/event-stream` 目标自动附加 `Connection: Upgrade` + `Upgrade: h2c`（HTTP/2  prior-knowledge 协商）；Litestar/uvicorn 将带 Upgrade 头的 POST 按升级语义处理，返回 400 `Validation failed: 'data'`。
+- **决策**：`Clients.agentWebClient` 显式构造 `JdkClientHttpConnector(HttpClient.Version.HTTP_1_1)`，禁用协议升级协商。
+- **后果**：SSE 桥接恢复（端到端 0 失败）；代价是放弃 h2c 多路复用（内网单跳场景无实际收益）。
+- **关联**：D-06；配套前端 D-05（graphql 改 POST）、D-07（SSE `data:` 帧兼容 + Vue 响应式整体替换）于 web-admin 0.1.5 修复。
