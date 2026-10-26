@@ -14,7 +14,8 @@ export async function login(username, password) {
   return data
 }
 
-export const stores = () => http.get('/graphql?query={stores{id,name,city}}').then(r => r.data.data.stores)
+// D-05: Spring GraphQL 仅接受 POST, GET 形式返回 405/400 — 改为统一 POST
+export const stores = () => http.post('/graphql', { query: '{stores{id,name,city}}' }).then(r => r.data.data.stores)
 export const diffReport = (storeId, date) => http.post('/graphql', {
   query: `query($s:Int,$d:String!){ diffReport(storeId:$s,date:$d,limit:60){
     date storeId alertCount lines{ingId ingName category theoGram actualGram diffPct level} } }`,
@@ -44,8 +45,8 @@ export async function agentChat(payload, onEvent) {
     let idx
     while ((idx = buf.indexOf('\n\n')) >= 0) {
       const chunk = buf.slice(0, idx); buf = buf.slice(idx + 2)
-      const line = chunk.split('\n').find(l => l.startsWith('data: '))
-      if (line) onEvent(JSON.parse(line.slice(6)))
+      const line = chunk.split('\n').find(l => l.startsWith('data: ') || l.startsWith('data:'))
+      if (line) onEvent(JSON.parse(line.replace(/^data:\s?/, '')))
     }
   }
 }
