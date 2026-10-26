@@ -48,9 +48,12 @@ async function send() {
   const text = q.value.trim(); if (!text || busy.value) return
   q.value = ''; busy.value = true
   msgs.value.push({ role: 'user', text }); scroll()
-  const bot = { role: 'bot', text: '' }; msgs.value.push(bot); scroll()
+  const botIdx = msgs.value.length
+  msgs.value.push({ role: 'bot', text: '' }); scroll()
   try {
     await agentChat({ question: text, storeId: storeId.value, date: date.value }, ev => {
+      // 通过索引整体替换对象保证 Vue3 ref 深层响应（直接改普通对象属性不会触发重渲染, D-07）
+      const bot = { ...msgs.value[botIdx] }
       if (ev.event === 'route') { bot.event = `路由→${ev.intent}` }
       else if (ev.event === 'progress') { bot.event = `工具调用×${ev.tools_used}` }
       else if (ev.event === 'answer') {
@@ -58,9 +61,10 @@ async function send() {
         bot.event = `置信度:${ev.confidence}`
       }
       else if (ev.event === 'error') { bot.text = '出错: ' + ev.message + '\n' + (ev.fallback || '') }
+      msgs.value[botIdx] = bot
       scroll()
     })
-  } catch (e) { bot.text = '网络错误: ' + e.message }
+  } catch (e) { msgs.value[botIdx] = { ...msgs.value[botIdx], text: '网络错误: ' + e.message } }
   busy.value = false; scroll()
 }
 
