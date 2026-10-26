@@ -22,6 +22,13 @@ public class Clients {
 
     @Bean
     public WebClient agentWebClient(@Value("${app.agent-url}") String base) {
-        return WebClient.builder().baseUrl(base).build();
+        // JDK HttpClient 会在 SSE 请求上附加 Connection: Upgrade/Upgrade: h2c（HTTP/2 协议升级），
+        // 而 Litestar/uvicorn 端会把该请求按升级语义解析导致 body 校验 400（D-06）。
+        // 显式指定 Reactor Netty 连接器（HTTP/1.1, 无升级头）——ADR-0016。
+        return WebClient.builder()
+                .baseUrl(base)
+                .clientConnector(new org.springframework.http.client.reactive.JdkClientHttpConnector(
+                        java.net.http.HttpClient.newBuilder().version(java.net.http.HttpClient.Version.HTTP_1_1).build()))
+                .build();
     }
 }
