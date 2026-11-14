@@ -10,7 +10,7 @@ import redis
 
 DB = dict(host=os.getenv("DB_HOST", "tidb.infra.svc.cluster.local"), port=4000,
           user="root", charset="utf8mb4", database="fnb")
-PW = os.getenv("REDIS_PW", "difyai123456")
+PW = os.environ.get("REDIS_PW", "")   # [OPT-C5]
 SEEDS = [f"redis8-node-{i}.dify-plus.svc.cluster.local" for i in range(3)]
 HOT_N = int(os.getenv("HOT_N", "50000"))
 QA_N = int(os.getenv("QA_N", "10000"))
