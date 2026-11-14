@@ -10,13 +10,14 @@ spec:
       restartPolicy: Never
       containers:
       - name: warmup
-        image: 10.167.2.175:30500/fnb/tools:0.1.7
+        image: 10.167.2.175:30500/fnb/tools:0.3.4
         args: ["python", "warmup.py"]
         env:
         - { name: DB_HOST, valueFrom: { configMapKeyRef: { name: app-config, key: DB_HOST } } }
-        - { name: REDIS_PW, valueFrom: { configMapKeyRef: { name: app-config, key: REDIS_PW } } }
+        # [O4/V4] 原 app-config(ConfigMap) 明文 REDIS_PW 键已移除, 改 Secret 注入
+        - { name: REDIS_PW, valueFrom: { secretKeyRef: { name: fnb-redis-auth, key: REDIS_PW } } }
         resources:
-          requests: { cpu: "500m", memory: 512Mi }
+          requests: { cpu: "0", memory: "0" }  # [V4-OPT][co-tenant] requests=0 scheduling placeholder, usage bounded by limits
           limits: { cpu: "2", memory: 2Gi }
 ---
 apiVersion: batch/v1
@@ -30,7 +31,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: bench
-        image: 10.167.2.175:30500/fnb/tools:0.1.7
+        image: 10.167.2.175:30500/fnb/tools:0.3.4
         args: ["python", "bench.py"]
         env:
         - { name: OLLAMA_BASE, valueFrom: { configMapKeyRef: { name: app-config, key: OLLAMA_BASE } } }

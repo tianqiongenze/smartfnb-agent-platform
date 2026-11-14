@@ -74,6 +74,11 @@ def gen_ai_llm(model: str = "", prompt_tokens: int = 0, completion_tokens: int =
     try:
         sp = _tracer.start_span("gen_ai.completion")
         sp.set_attribute("gen_ai.request.model", model)
+        # [O3/V4 对标 2026-11] OTel GenAI semconv(2026-11 稳定版)将 provider 语义属性定为
+        #   gen_ai.provider.name(well-known 值, 本项目 LLM 后端为 Ollama → "ollama");
+        #   保留 gen_ai.system 供旧面板/查询兼容(gen_ai_agent 的 system="smartfnb" 不动)。
+        sp.set_attribute("gen_ai.system", "ollama")
+        sp.set_attribute("gen_ai.provider.name", "ollama")
         sp.set_attribute("gen_ai.usage.input_tokens", prompt_tokens)
         sp.set_attribute("gen_ai.usage.output_tokens", completion_tokens)
         return _SpanCtx(sp)

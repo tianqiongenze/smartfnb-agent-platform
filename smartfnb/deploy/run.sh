@@ -11,6 +11,13 @@ mkdir -p $LOG
 log() { echo "[$(date '+%F %T')] $*" | tee -a $LOG/run.log; }
 
 build_images() {
+  # [O2/V4] tag 与 deploy/*.yaml 清单引用一致(=清退前现网版本), 且逐仓经
+  # registry 10.167.2.175:30500 /v2/<repo>/tags/list 核对存在(2026-11-14):
+  #   tools=0.1.7(01/02/03/04 清单)  svc-recipe=0.2.1  svc-inventory=0.3.3
+  #   svc-portal=0.1.3  agent-runtime=0.6.5  mcp-fnb-tools=0.4.0  web-admin=0.1.5
+  # 注意: registry 中另有更高 tag(fnb/tools 0.3.2 / fnb/agent-runtime 0.7.2)无清单
+  # 引用、属历史未部署构建, 不作为构建目标; 重复构建会覆盖同名 tag(docs/10 教训6:
+  # 现网改动必须回写清单——本函数即按清单 tag 构建, 避免再造悬空 tag)。
   log "== 1. tools image =="
   docker build -q -t $REG/fnb/tools:0.1.7 -f tools/Dockerfile tools/ >> $LOG/build.log 2>&1
   docker push -q $REG/fnb/tools:0.1.7 >> $LOG/build.log 2>&1
@@ -20,20 +27,22 @@ build_images() {
     -w /ws $REG/base/maven:3.9.11-eclipse-temurin-25 \
     mvn -q -T2 package >> $LOG/maven.log 2>&1
   log "maven done:"; grep -hE "Tests run|BUILD" $LOG/maven.log | tail -5 || true
-  for svc in recipe inventory portal; do
-    log "== 3. java image $svc =="
-    docker build -q -t $REG/fnb/svc-$svc:0.1.1 -f java/Dockerfile.$svc java/ >> $LOG/build.log 2>&1
-    docker push -q $REG/fnb/svc-$svc:0.1.1 >> $LOG/build.log 2>&1
-  done
+  log "== 3. java images =="
+  docker build -q -t $REG/fnb/svc-recipe:0.2.1 -f java/Dockerfile.recipe java/ >> $LOG/build.log 2>&1
+  docker push -q $REG/fnb/svc-recipe:0.2.1 >> $LOG/build.log 2>&1
+  docker build -q -t $REG/fnb/svc-inventory:0.3.3 -f java/Dockerfile.inventory java/ >> $LOG/build.log 2>&1
+  docker push -q $REG/fnb/svc-inventory:0.3.3 >> $LOG/build.log 2>&1
+  docker build -q -t $REG/fnb/svc-portal:0.1.3 -f java/Dockerfile.portal java/ >> $LOG/build.log 2>&1
+  docker push -q $REG/fnb/svc-portal:0.1.3 >> $LOG/build.log 2>&1
   log "== 4. agent-runtime =="
-  docker build -q -t $REG/fnb/agent-runtime:0.1.1 agent-runtime/ >> $LOG/build.log 2>&1
-  docker push -q $REG/fnb/agent-runtime:0.1.1 >> $LOG/build.log 2>&1
+  docker build -q -t $REG/fnb/agent-runtime:0.6.5 agent-runtime/ >> $LOG/build.log 2>&1
+  docker push -q $REG/fnb/agent-runtime:0.6.5 >> $LOG/build.log 2>&1
   log "== 5. mcp-fnb-tools =="
-  docker build -q -t $REG/fnb/mcp-fnb-tools:0.1.1 mcp-fnb-tools/ >> $LOG/build.log 2>&1
-  docker push -q $REG/fnb/mcp-fnb-tools:0.1.1 >> $LOG/build.log 2>&1
+  docker build -q -t $REG/fnb/mcp-fnb-tools:0.4.0 mcp-fnb-tools/ >> $LOG/build.log 2>&1
+  docker push -q $REG/fnb/mcp-fnb-tools:0.4.0 >> $LOG/build.log 2>&1
   log "== 6. web-admin (npm build in container) =="
-  docker build -q -t $REG/fnb/web-admin:0.1.1 web-admin/ >> $LOG/build.log 2>&1
-  docker push -q $REG/fnb/web-admin:0.1.1 >> $LOG/build.log 2>&1
+  docker build -q -t $REG/fnb/web-admin:0.1.5 web-admin/ >> $LOG/build.log 2>&1
+  docker push -q $REG/fnb/web-admin:0.1.5 >> $LOG/build.log 2>&1
   log "ALL IMAGES BUILT & PUSHED"
 }
 
@@ -105,6 +114,7 @@ case $PH in
     build_images
     $0 db
     $0 datagen
+    $0 indexes
     $0 warmup
     $0 bench
     $0 svc

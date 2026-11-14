@@ -11,14 +11,14 @@ spec:
       nodeSelector: { kubernetes.io/hostname: k8s-worker1 }
       containers:
       - name: ollama
-        image: 10.100.135.132:5000/ollama:0.6.8
+        image: 10.167.2.175:30500/fnb/ollama:0.6.8
         env:
         - { name: OLLAMA_NUM_PARALLEL, value: "1" }
         - { name: OLLAMA_MAX_LOADED_MODELS, value: "2" }
         - { name: OLLAMA_KEEP_ALIVE, value: "30m" }
         ports: [{ containerPort: 11434 }]
         resources:
-          requests: { cpu: "2", memory: 8Gi }
+          requests: { cpu: "0", memory: "0" }  # [V4-OPT][co-tenant] requests=0 scheduling placeholder, usage bounded by limits
           limits: { cpu: "24", memory: 32Gi }
         volumeMounts:
         - { name: models, mountPath: /root/.ollama }

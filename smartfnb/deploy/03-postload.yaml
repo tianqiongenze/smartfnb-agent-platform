@@ -10,7 +10,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: idx
-        image: 10.167.2.175:30500/fnb/tools:0.1.7
+        image: 10.167.2.175:30500/fnb/tools:0.3.4
         args: ["python", "run_sql.py", "/sql/003_indexes.sql", "/sql/004_views.sql"]
         env: [{ name: DB_HOST, valueFrom: { configMapKeyRef: { name: app-config, key: DB_HOST } } }]
         volumeMounts: [{ name: sql, mountPath: /sql }]

@@ -1,0 +1,7 @@
+# [GitOps/Flux] 从 Flux 构建集中删除一次性 Job 文档(见 kustomization.yaml 头注)
+$patch: delete
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-indexes
+  namespace: fnb-prod

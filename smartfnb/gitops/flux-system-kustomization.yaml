@@ -1,0 +1,29 @@
+# [GitOps/Flux 落地 2026-11-14] bootstrap 清单: fnb-prod 应用 Kustomization(ADR-0017)
+# 构建口径见 smartfnb/deploy/kustomization.yaml 头注(15 yaml - 14-otel;
+# Secret 文档剥离 → 密钥仍走 deploy/README.md 方式b, flux 不触碰)。
+# revert 语义: git revert → artifact 重推 → 本 Kustomization 自动收敛回上一状态。
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: fnb-apps
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 3m
+  sourceRef:
+    kind: OCIRepository
+    name: smartfnb-deploy
+  path: .
+  targetNamespace: fnb-prod
+  prune: false          # 首期不启用 prune(避免误删集群内手工对象), 后续再评估
+  wait: true
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: agent-runtime
+      namespace: fnb-prod
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: svc-portal
+      namespace: fnb-prod

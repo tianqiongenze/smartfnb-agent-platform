@@ -1,0 +1,7 @@
+# [O4/V4] SOPS creation rule: 仅本目录 secrets.enc.yaml 走 age 加密
+# 私钥 D:/projects/连锁餐饮智能体/.sops.agekey 已加入 .gitignore, 绝不入库;
+# 公钥(recipient)入库于此。encrypted_regex 仅加密 data/stringData 之下的值。
+creation_rules:
+  - path_regex: secrets\.enc\.yaml$
+    encrypted_regex: '^(data|stringData)$'
+    age: age1fqkw0h9vssygmql30znugzyxlp00cw7e8vvtwcvduh6l6ue23v7qk5lrfm

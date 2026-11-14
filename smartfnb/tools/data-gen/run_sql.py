@@ -9,7 +9,15 @@ cur = c.cursor()
 for f in sys.argv[1:]:
     print(f"=== applying {f} ===", flush=True)
     sql = open(f, encoding="utf-8").read()
-    for stmt in [s.strip() for s in sql.split(";") if s.strip() and not s.strip().startswith("--")]:
+    for stmt in [s.strip() for s in sql.split(";") if s.strip()]:
+        # [V4-OPT][O1修复] 剥离整行注释后再判空: O1 重建的 001_schema.sql 在
+        # CREATE DATABASE / CREATE TABLE 前有节注释, 原实现按 chunk 首行是否
+        # 以 -- 开头整块跳过, 导致建库/建表语句被漏掉(db-init 报 Unknown
+        # database 'fnb')。整行注释剥离对 MySQL 解析无影响, 行内注释保留。
+        lines = [l for l in stmt.splitlines() if not l.strip().startswith("--")]
+        stmt = "\n".join(lines).strip()
+        if not stmt:
+            continue
         try:
             cur.execute(stmt)
         except Exception as e:

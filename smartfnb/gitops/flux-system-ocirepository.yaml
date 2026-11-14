@@ -1,0 +1,15 @@
+# [GitOps/Flux 落地 2026-11-14] bootstrap 清单: OCI 源指向本地 registry(air-gapped, ADR-0017)
+# artifact 由 flux push artifact 推送(OCIRepository 模式, master 端 flux v2.3.0 CLI 实测可推
+# plain-HTTP registry); bootstrap 时 kubectl apply 本文件, 之后由 Flux 持续 reconcile。
+# 注: 本文件属于 flux-system bootstrap 面, 不在 fnb-apps 自身管理范围内(避免自举环)。
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: OCIRepository
+metadata:
+  name: smartfnb-deploy
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: oci://10.167.2.175:30500/flux/smartfnb-deploy
+  ref:
+    tag: main
+  insecure: true   # 本地 registry 为 plain HTTP(10.167.2.175:30500)

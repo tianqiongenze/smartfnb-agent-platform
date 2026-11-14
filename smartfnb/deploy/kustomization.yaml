@@ -1,0 +1,40 @@
+# Flux Kustomize 构建覆盖层([GitOps/Flux 落地, 2026-11-14])
+# 被 Flux Kustomization fnb-apps(path=. )经 OCI artifact 消费;
+# 本地验证: kubectl kustomize smartfnb/deploy
+#
+# 资源口径(15 个 yaml - 14-otel, 另有 3 类按实测口径排除):
+#   - 14-otel.yaml            不入构建(ADR-0012: collector 需 x86-64-v2, 本集群 Xeon E5 必失败, 勿部署)
+#   - otel-collector-config.yaml 不入构建(非 k8s 清单, 是 14-otel.yaml 内嵌 ConfigMap 的源配置)
+#   - secrets.enc.yaml        不入构建(SOPS 密文; 密钥仍按 deploy/README.md 方式b 手工解密注入,
+#                             若直接 apply 密文会用 ENC[...] 覆盖现网真实值)
+#   - Secret 文档(fnb-secret/fnb-redis-auth)以 $patch: delete 剥离
+#     (清单内为 <SET_AT_APPLY> 占位, 直接 apply 会覆盖现网真实值 → 鉴权/Redis 全挂)
+#   - Job 文档(db-init/data-gen/db-indexes/redis-warmup/llm-bench/daily-demand)以 $patch: delete 剥离:
+#     ① 一次性引导作业, 日常由 run.sh 按需触发; ② Job 带 ttlSecondsAfterFinished, 完成后被 TTL
+#     控制器删除, 若纳入 flux 会每轮 reconcile 复活重跑(实测 daily-demand SSA dry-run 因
+#     spec.template immutable 被拒, 见 ADR-0017 落地记录); CronJob 模板可变, 纳入无碍。
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: fnb-prod
+resources:
+  - 01-infra-jobs.yaml
+  - 02-datagen.yaml
+  - 03-postload.yaml
+  - 03-services.yaml
+  - 04-warmup-bench.yaml
+  - 05-ollama-fnb.yaml
+  - 06-mdm-h5-alertpush.yaml
+  - 07-procurement.yaml
+  - 10-forecast.yaml
+  - 11-member-h5.yaml
+  - 12-event-consumer.yaml
+  - 13-worldmodel.yaml
+patches:
+  - path: patch-secret-fnb-secret-delete.yaml
+  - path: patch-secret-fnb-redis-auth-delete.yaml
+  - path: patch-job-db-init-delete.yaml
+  - path: patch-job-data-gen-delete.yaml
+  - path: patch-job-db-indexes-delete.yaml
+  - path: patch-job-redis-warmup-delete.yaml
+  - path: patch-job-llm-bench-delete.yaml
+  - path: patch-job-daily-demand-delete.yaml

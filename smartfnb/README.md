@@ -28,6 +28,7 @@ smartfnb/
     ├── 03-postload.yaml    索引+视图Job
     ├── 04-warmup-bench.yaml warmup/LLM基准/预警CronJob
     ├── 03-services.yaml    6个服务Deployment/Service/Ingress
+    ├── secrets.enc.yaml    fnb-redis-auth/fnb-secret 真实值(SOPS+age 加密入库; 私钥 .sops.agekey 不入库)
     └── run.sh              总编排(images|db|datagen|indexes|warmup|bench|svc|verify|all)
 ```
 
@@ -37,6 +38,9 @@ smartfnb/
 ./deploy/run.sh all      # 全流程: 镜像→建库→1.25亿数据→索引→warmup→LLM基准→部署→验证
 ./deploy/run.sh verify   # 端到端验证
 ```
+
+> [O4/V4] 密钥治理：ConfigMap 不含口令。部署时须注入 Secret（`fnb-redis-auth` 的 `REDIS_PW`、
+> `fnb-secret` 的 `jwt-secret`）——见 `deploy/README.md`（sops 解密注入或 `kubectl create secret`）。
 
 ## 访问入口
 

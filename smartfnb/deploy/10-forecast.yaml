@@ -10,7 +10,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: dd
-        image: 10.167.2.175:30500/fnb/tools:0.2.2
+        image: 10.167.2.175:30500/fnb/tools:0.3.4
         args: ["python", "daily_demand.py"]
         env: [{ name: DB_HOST, valueFrom: { configMapKeyRef: { name: app-config, key: DB_HOST } } }]
         volumeMounts: [{ name: sql, mountPath: /sql }]
@@ -29,12 +29,12 @@ spec:
     spec:
       containers:
       - name: forecast
-        image: 10.167.2.175:30500/fnb/svc-forecast:0.1.0
+        image: 10.167.2.175:30500/fnb/svc-forecast:0.1.1
         env:
         - { name: DB_HOST, valueFrom: { configMapKeyRef: { name: app-config, key: DB_HOST } } }
         ports: [{ containerPort: 8000 }]
         resources:
-          requests: { cpu: 250m, memory: 512Mi }
+          requests: { cpu: "0", memory: "0" }  # [V4-OPT][co-tenant] requests=0 scheduling placeholder, usage bounded by limits
           limits: { cpu: "1", memory: 1Gi }
         readinessProbe: { httpGet: { path: /health, port: 8000 }, periodSeconds: 15, failureThreshold: 10 }
 ---

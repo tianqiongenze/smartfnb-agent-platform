@@ -1,3 +1,8 @@
+# ⛔ 不可部署(ADR-0012): 官方 otel collector 镜像(0.116.0/otelcol-contrib)要求 x86-64-v2,
+#    本集群 CPU 为 Xeon E5 代际, exec 必失败(CrashLoopBackOff)——ADR-0012 三次实证
+#    (otelcol / otelcol-contrib / mysql8 同因); 历史上该 Deployment 从未成功落地
+#    (docs/10 §二: 现网仅有悬空 Service, Deployment 从未 apply)。
+#    本文件保留仅为历史与将来新硬件(GPU/x86-64-v2+)恢复时参考, 勿加入任何部署序列。
 # R7: OTel Collector(traces: OTLP→stdout[loki可采])
 apiVersion: v1
 kind: ConfigMap
