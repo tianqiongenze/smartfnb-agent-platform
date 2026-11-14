@@ -64,7 +64,7 @@ def push_high_alerts(date, store_id):
 def main():
     global producer
     r = redis.RedisCluster(host=os.getenv("REDIS_SEED", "redis8-node-0.dify-plus.svc.cluster.local"),
-                           port=6379, password=os.getenv("REDIS_PW", "difyai123456"),
+                           port=6379, password=os.getenv("REDIS_PW", ""),   # [OPT-C5]
                            decode_responses=True, require_full_coverage=False)
     client = pulsar.Client(PULSAR_URL)
     producer = client.create_producer(TOPIC)
