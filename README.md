@@ -26,6 +26,7 @@ docs/                       全套工程文档(GB/T 8567风格)
   07-ADR集.md                ADR-0009~0016(0016: WebClient h2c升级缺陷)
   08-功能与性能融合测试报告V3.md  无头浏览器回归+K6五档风暴+Locust(V3)
   09-局域网人工测试操作指南.md   业务验收人员直接使用
+  10-停机腾退与恢复手册.md   停机快照+镜像清单+一键恢复
 smartfnb/
   agent-runtime/            Litestar+LangGraph+Harness+语义缓存+A2A+OTel
   java/                     5服务 SpringBoot3.3+Undertow+JDK21虚拟线程(recipe/inventory/procurement/member/portal)
