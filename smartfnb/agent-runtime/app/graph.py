@@ -20,7 +20,7 @@ from .llm import main_llm, fast_llm
 from .harness import Budget, BudgetExceeded, SessionContext
 from .harness.loop import act_with_tools, verify, reflect_on_budget
 
-REDIS_PW = os.getenv("REDIS_PW", "difyai123456")
+REDIS_PW = os.environ.get("REDIS_PW", "")   # [OPT-C5] 密码仅经环境/ConfigMap注入, 不入库
 REDIS_SEED = os.getenv("REDIS_SEED", "redis8-node-0.dify-plus.svc.cluster.local")
 
 class AgentState(TypedDict):
@@ -109,8 +109,17 @@ async def node_diff_agent(state: AgentState, config) -> dict:
                              direct["answer"] + "\n\n【归因解读】\n" + str(result.content),
                              "HIGH", outputs)
     except BudgetExceeded as e:
+        budget.record_error()
         return await _finish(state, ctx, reflect_on_budget(e, direct["answer"]),
                              "HIGH", outputs, "budget_degraded")
+    except Exception as e:   # [OPT-C1] 非预算异常同样计入熔断(此前直达catch-all, 熔断不可达)
+        try:
+            budget.record_error()
+        except BudgetExceeded:
+            pass
+        return await _finish(state, ctx, reflect_on_budget(
+            BudgetExceeded(f"LLM调用异常: {type(e).__name__}"), direct["answer"]),
+            "HIGH", outputs, "llm_error_degraded")
 
 def _call_tool_wrap(tools):
     async def _f(name, args):
@@ -121,10 +130,11 @@ async def node_procurement(state: AgentState, config) -> dict:
     """采购专家(人在环): 查单/比价直答; 生成建议单解析受Budget保护"""
     tools = config["configurable"]["mcp_tools"]
     ctx = _ctx_of(state)
+    budget: Budget = config["configurable"].get("budget") or Budget()   # [OPT-C2] 请求级预算贯通
     q = state["question"]
     outputs = []
     if ("建议单" in q) or ("查看" in q) or ("待审批" in q) or ("比价" not in q and parse_proc_request(q)["qty"] is None):
-        data = await act_with_tools(ctx, Budget(), _call_tool_wrap(tools), "get_suggestions",
+        data = await act_with_tools(ctx, budget, _call_tool_wrap(tools), "get_suggestions",   # [OPT-C2]
                                     {"store_id": state["store_id"], "status": "DRAFT"})
         if data is None:
             return await _finish(state, ctx, DEGRADED_NOTICE.format(
@@ -150,7 +160,7 @@ async def node_procurement(state: AgentState, config) -> dict:
                              f"未匹配到食材\"{req['ing_hint']}\", 请使用标准名称或别名重试。",
                              "MEDIUM", [], "ingredient_not_found")
     name = matches[0].get("name_std")
-    data = await act_with_tools(ctx, Budget(), _call_tool_wrap(tools), "suggest_po",
+    data = await act_with_tools(ctx, budget, _call_tool_wrap(tools), "suggest_po",   # [OPT-C2]
                                 {"store_id": state["store_id"], "ing_name": name, "qty_kg": req["qty"]})
     if data is None or data.get("error"):
         return await _finish(state, ctx, DEGRADED_NOTICE.format(
@@ -169,12 +179,13 @@ async def node_forecast(state: AgentState, config) -> dict:
     """预测专家: get_forecast直答(置信度+依赖声明透出)"""
     tools = config["configurable"]["mcp_tools"]
     ctx = _ctx_of(state)
+    budget: Budget = config["configurable"].get("budget") or Budget()   # [OPT-C2]
     req = parse_proc_request(state["question"])
     hint = req["ing_hint"]
     if not hint:
         return await _finish(state, ctx, "请告诉我预测哪种食材, 例如: \"预测7号店下周鲈鱼的需求\"。",
                              "MEDIUM", [], "need_ingredient")
-    data = await act_with_tools(ctx, Budget(), _call_tool_wrap(tools), "get_forecast",
+    data = await act_with_tools(ctx, budget, _call_tool_wrap(tools), "get_forecast",   # [OPT-C2]
                                 {"store_id": state["store_id"], "ing_name": hint, "days": 7})
     if data is None or data.get("error"):
         return await _finish(state, ctx,
@@ -223,8 +234,17 @@ async def node_fallback(state: AgentState, config) -> dict:
                              "HIGH" if sem else "MEDIUM", [],
                              "semantic_ref" if sem else "non_data_intent")
     except BudgetExceeded as e:
+        budget.record_error()
         return await _finish(state, ctx, reflect_on_budget(e, None), "LOW", [],
                              "budget_degraded", deg=True)
+    except Exception as e:   # [OPT-C1]
+        try:
+            budget.record_error()
+        except BudgetExceeded:
+            pass
+        return await _finish(state, ctx, reflect_on_budget(
+            BudgetExceeded(f"LLM调用异常: {type(e).__name__}"), None), "LOW", [],
+            "llm_error_degraded", deg=True)
 
 def build_graph():
     g = StateGraph(AgentState)
