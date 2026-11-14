@@ -15,6 +15,8 @@ from .graph import graph, _redis
 from .llm import fast_llm
 from .mcp_client import load_tools
 from .direct import faq_hit
+from .guards import extract_store_date    # [OPT-D08]
+
 from .harness import Budget, run_eval
 from .a2a import AGENT_CARD
 from . import otel_util
@@ -53,8 +55,8 @@ async def health() -> dict:
 async def chat(data: dict) -> Stream:
     """SSE 流式对话: harness循环(路由→专家[ACT+VERIFY内联]→输出), 全程Budget管控"""
     question = str(data.get("question", "")).strip()
-    store_id = int(data.get("storeId", 7))
-    day = str(data.get("date") or _date.today())
+    store_id, day = extract_store_date(question, int(data.get("storeId", 7)),
+                                       str(data.get("date") or _date.today()))  # [OPT-D08]
     if not question:
         raise ValueError("question required")
 
@@ -128,14 +130,15 @@ async def agent_card() -> dict:
 @post("/a2a")
 async def a2a_message(data: dict) -> dict:
     """R5 A2A: message/send任务委派(JSON-RPC over HTTP)"""
-    import traceback as _tb
     try:
         return await _a2a_impl(data)
     except Exception as e:
+        # [OPT-C3] 安全: 不向调用方回吐内部堆栈, 完整堆栈仅入服务端日志
+        import logging as _log
+        _log.getLogger("uvicorn.error").exception("a2a message/send failed")
         return {"jsonrpc": "2.0", "id": data.get("id"),
                 "error": {"code": -32603,
-                          "message": f"{type(e).__name__}: {e}",
-                          "data": _tb.format_exc()[-800:]}}
+                          "message": f"internal error: {type(e).__name__}"}}
 
 async def _a2a_impl(data: dict) -> dict:
     with otel_util.gen_ai_agent("a2a_delegate"):
@@ -154,9 +157,11 @@ async def _a2a_impl(data: dict) -> dict:
         config = {"configurable": {"mcp_tools": MCP_TOOLS,
                                    "fallback_llm": fast_llm(),
                                    "redis": REDIS_CLIENT, "budget": budget}}
+        a_store, a_day = extract_store_date(text, int(md.get("storeId", 7)),
+                                            str(md.get("date") or _date.today()))  # [OPT-D08]
         state = {"question": text,
-                 "store_id": int(md.get("storeId", 7)),
-                 "date": str(md.get("date") or _date.today()),
+                 "store_id": a_store,
+                 "date": a_day,
                  "tool_outputs": [], "degraded": False, "cache_hit": False,
                  "budget_snapshot": {}}
         answer, confidence = "", "LOW"
